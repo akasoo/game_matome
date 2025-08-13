@@ -1,6 +1,6 @@
 # 暇つぶしゲーム集 (Hub Games Site)
 
-静的HTMLとJavaScriptだけで動く、暇つぶしゲーム集です。
+静的HTMLとJavaScriptだけで動く、暇つぶしゲーム集です。  
 GitHub Pages で公開されていて、ブラウザだけで手軽に遊べます。
 
 ---
