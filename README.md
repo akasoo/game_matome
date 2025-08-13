@@ -13,7 +13,7 @@ GitHub Pages で公開されていて、ブラウザだけで手軽に遊べま�
 ---
 
 ## 🚀 デモサイト
-[GitHub Pagesで公開する例](https://akasoo.github.io/hub_games_site/)
+[GitHub Pages](https://akasoo.github.io/hub_games_site/)
 
 ---
 
