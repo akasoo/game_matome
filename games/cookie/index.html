@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>クッキー工房 - クリック放置ゲーム</title>
+<meta name="description" content="クリックでクッキーを焼いて、建物とアップグレードで増やしていく放置系ミニゲーム。">
+<style>
+  :root{
+    --bg:#0f1320; --panel:#141a2b; --border:#1f2940; --txt:#e8f0ff;
+    --muted:#93a4c4; --acc:#ffb703; --good:#22c55e; --bad:#ef4444;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; color:var(--txt); font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto;
+    background:
+      radial-gradient(900px 600px at 10% -10%, #20305f33, transparent),
+      radial-gradient(800px 700px at 120% 20%, #0a162b66, transparent),
+      var(--bg);
+    display:flex; align-items:center; justify-content:center; padding:16px;
+  }
+  .wrap{width:min(1100px,95vw); display:grid; gap:16px; grid-template-columns: 1.3fr 1fr;}
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:18px; padding:16px}
+  h1{margin:0 0 6px; font-size:clamp(18px,3vw,24px)}
+  .muted{color:var(--muted)}
+  .big{font-size:clamp(26px,6vw,42px); font-weight:800}
+  .cookie{
+    width:min(300px,46vw); aspect-ratio:1/1; border-radius:999px; border:8px solid #3b2f22;
+    background: radial-gradient(60% 60% at 30% 30%, #d7a86f, #b07b4a) center/cover;
+    box-shadow: 0 20px 60px rgba(0,0,0,.35), inset 0 6px 40px #0006;
+    cursor:pointer; user-select:none; display:flex; align-items:center; justify-content:center;
+    margin:10px auto;
+  }
+  .cookie:active{transform:translateY(1px) scale(.99)}
+  .cols{display:grid; grid-template-columns:1fr; gap:12px}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+  .pill{border:1px solid #ffffff22; padding:6px 10px; border-radius:999px; color:var(--muted); font-size:12px}
+  .btn{appearance:none; border:none; border-radius:10px; padding:10px 14px; background:#273352; color:#cfe1ff; cursor:pointer}
+  .btn.primary{background:linear-gradient(180deg,#ffd166,#ffb703); color:#1a1300; font-weight:800}
+  .btn:disabled{opacity:.5; cursor:not-allowed}
+  .list{display:grid; gap:10px; max-height:60vh; overflow:auto; padding-right:4px}
+  .item{display:grid; grid-template-columns: 1fr auto; gap:8px; align-items:center; border:1px solid var(--border); padding:10px; border-radius:12px; background:#0f1527}
+  .item .name{font-weight:700}
+  .price{color:#ffd166}
+  .note{font-size:12px; color:var(--muted)}
+  .hr{height:1px; background:var(--border); margin:8px 0}
+  .right{display:flex; flex-direction:column; gap:12px}
+  .tiny{font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>🍪 クッキー工房</h1>
+    <div class="muted tiny">クリックでクッキーを焼こう。建物とアップグレードで生産を加速！</div>
+
+    <div class="row" style="justify-content:space-between;margin-top:8px">
+      <div class="pill">合計：<b id="cookies">0</b> 枚</div>
+      <div class="pill">CPS：<b id="cps">0</b> /秒</div>
+      <div class="pill">CPC：<b id="cpc">1</b> /クリック</div>
+    </div>
+
+    <button class="cookie" id="cookieBtn" aria-label="クッキーを焼く">
+      <div class="big" id="onCookie">CLICK!</div>
+    </button>
+
+    <div class="row" style="justify-content:center">
+      <button class="btn primary" id="buyClick">クリック強化（+1 CPC）<span class="price" id="clickCost">価格 15</span></button>
+      <button class="btn" id="saveBtn">手動セーブ</button>
+      <button class="btn" id="exportBtn">エクスポート</button>
+      <button class="btn" id="importBtn">インポート</button>
+      <button class="btn" id="resetBtn">初期化</button>
+    </div>
+
+    <div class="hr"></div>
+    <div class="cols">
+      <div class="list" id="buildingsList" aria-label="建物一覧"></div>
+      <div class="list" id="upgradesList" aria-label="アップグレード一覧"></div>
+    </div>
+  </div>
+
+  <div class="card right">
+    <div>
+      <div class="muted">統計</div>
+      <div class="tiny">プレイ時間：<span id="playtime">0:00:00</span></div>
+      <div class="tiny">累計クリック：<span id="clicks">0</span></div>
+      <div class="tiny">最終セーブ：<span id="lastSave">-</span></div>
+      <div class="tiny">最終ログアウト：<span id="lastQuit">-</span></div>
+    </div>
+    <div>
+      <div class="muted">ヒント</div>
+      <ul class="tiny" style="margin:6px 0 0 18px;line-height:1.6">
+        <li>建物は自動でCPS（毎秒生産）を増やします</li>
+        <li>アップグレードはCPSやCPCを倍率で強化します</li>
+        <li>ゲームを閉じていた時間ぶんのクッキーは復帰時に加算されます</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const buildingsDef = [
+    { id:"cursor",  name:"カーソル",     base: 15,  prod: 0.1,  desc:"自動クリック装置。毎秒 +0.1" },
+    { id:"grandma", name:"おばあちゃん", base: 100, prod: 1,    desc:"熟練の手作り。毎秒 +1" },
+    { id:"farm",    name:"農場",         base: 1100,prod: 8,    desc:"小麦もチョコも自給自足。毎秒 +8" },
+    { id:"factory", name:"工場",         base: 12000,prod: 47,  desc:"大量生産ライン。毎秒 +47" },
+    { id:"lab",     name:"研究所",       base: 130000,prod: 260,desc:"味と速度の科学。毎秒 +260" }
+  ];
+  const upgradesDef = [
+    { id:"clickx2",   name:"職人の指",       cost:100,  effect:s=>s.cpc *= 2,      show: s=>s.cpc>=1, desc:"クリック効率2倍" },
+    { id:"cursorx2",  name:"高速カーソル",   cost:500,  effect:s=>s.mul.cursor *=2, show: s=>s.owns.cursor>=10, desc:"カーソル生産2倍" },
+    { id:"grandmax2", name:"秘伝レシピ",     cost:2500, effect:s=>s.mul.grandma*=2, show: s=>s.owns.grandma>=10, desc:"おばあちゃん生産2倍" },
+    { id:"factoryx2", name:"無限ライン",     cost:50000,effect:s=>s.mul.factory*=2, show: s=>s.owns.factory>=5, desc:"工場生産2倍" },
+    { id:"labx2",     name:"量子クッキング", cost:300000,effect:s=>s.mul.lab*=2,   show: s=>s.owns.lab>=3, desc:"研究所生産2倍" }
+  ];
+
+  const S = { cookies: 0, cpc: 1, owns: {}, mul: {}, bought: {}, clicks:0,
+    lastSave: 0, lastQuit: 0, startAt: Date.now() };
+  buildingsDef.forEach(b=>{S.owns[b.id]=0; S.mul[b.id]=1});
+  upgradesDef.forEach(u=>S.bought[u.id]=false);
+
+  const $ = s => document.querySelector(s);
+  const fmt = n => n>=1e9? (n/1e9).toFixed(2)+"B" :
+                     n>=1e6? (n/1e6).toFixed(2)+"M" :
+                     n>=1e3? (n/1e3).toFixed(2)+"K" : Math.round(n).toString();
+
+  function save(manual=false){
+    S.lastSave = Date.now();
+    localStorage.setItem('cookie-save-v1', JSON.stringify(S));
+    if (manual) $('#lastSave').textContent = new Date(S.lastSave).toLocaleString();
+  }
+  function load(){
+    const raw = localStorage.getItem('cookie-save-v1'); if (!raw) return;
+    try{ Object.assign(S, JSON.parse(raw)); }catch(e){}
+  }
+  function exportSave(){
+    const blob = new Blob([btoa(unescape(encodeURIComponent(JSON.stringify(S))))], {type:'text/plain'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'cookie_save.txt'; a.click();
+  }
+  function importSave(){
+    const inp = document.createElement('input'); inp.type='file'; inp.accept='.txt';
+    inp.onchange = () => {
+      const f = inp.files[0]; if(!f) return;
+      const r = new FileReader();
+      r.onload = () => {
+        try{
+          const json = decodeURIComponent(escape(atob(r.result)));
+          Object.assign(S, JSON.parse(json)); renderAll(); alert('インポートしました');
+        }catch(e){ alert('読み込みに失敗しました'); }
+      };
+      r.readAsText(f);
+    };
+    inp.click();
+  }
+
+  function costOf(def, owned){ return Math.ceil(def.base * Math.pow(1.15, owned)); }
+  function totalCPS(){ let cps = 0; buildingsDef.forEach(b=>{ cps += S.owns[b.id] * b.prod * (S.mul[b.id]||1); }); return cps; }
+
+  function buildBuildings(){
+    const list = $('#buildingsList'); list.innerHTML = '<h3>🏗 建物</h3>';
+    buildingsDef.forEach(b=>{
+      const owned = S.owns[b.id]; const cost = costOf(b, owned);
+      const el = document.createElement('div'); el.className='item';
+      el.innerHTML = `
+        <div>
+          <div class="name">${b.name} <span class="muted">×${owned}</span></div>
+          <div class="note">${b.desc} / 現CPS: <b>${fmt(b.prod * (S.mul[b.id]||1) * owned)}</b></div>
+        </div>
+        <div>
+          <button class="btn buy" data-id="${b.id}">購入 <span class="price">${fmt(cost)}</span></button>
+        </div>`;
+      list.appendChild(el);
+    });
+    list.querySelectorAll('.buy').forEach(btn=>{
+      btn.onclick = ()=>{
+        const id = btn.dataset.id;
+        const def = buildingsDef.find(x=>x.id===id);
+        const cost = costOf(def, S.owns[id]);
+        if (S.cookies >= cost){ S.cookies -= cost; S.owns[id]++; renderAll(); }
+      };
+    });
+  }
+
+  function buildUpgrades(){
+    const list = $('#upgradesList'); list.innerHTML = '<h3>🧪 アップグレード</h3>';
+    upgradesDef.forEach(u=>{
+      if (S.bought[u.id]) return; if (!u.show(S)) return;
+      const el = document.createElement('div'); el.className='item';
+      el.innerHTML = `
+        <div>
+          <div class="name">${u.name}</div>
+          <div class="note">${u.desc}</div>
+        </div>
+        <div>
+          <button class="btn buyU" data-id="${u.id}">購入 <span class="price">${fmt(u.cost)}</span></button>
+        </div>`;
+      list.appendChild(el);
+    });
+    list.querySelectorAll('.buyU').forEach(btn=>{
+      btn.onclick = ()=>{
+        const u = upgradesDef.find(x=>x.id===btn.dataset.id);
+        if (S.cookies >= u.cost){ S.cookies -= u.cost; u.effect(S); S.bought[u.id]=true; renderAll(); }
+      };
+    });
+  }
+
+  function renderAll(){
+    $('#cookies').textContent = fmt(S.cookies);
+    const cps = totalCPS(); $('#cps').textContent = (Math.round(cps*10)/10);
+    $('#cpc').textContent = Math.round(S.cpc);
+    $('#clickCost').textContent = `価格 ${Math.ceil(15 * Math.pow(1.25, S.cpc-1))}`;
+    buildBuildings(); buildUpgrades();
+  }
+
+  function clickCost(){ return Math.ceil(15 * Math.pow(1.25, S.cpc-1)); }
+  function applyOffline(){
+    if (!S.lastQuit) return;
+    const secs = Math.floor((Date.now() - S.lastQuit)/1000); if (secs<=0) return;
+    const gain = totalCPS()*secs; S.cookies += gain; if (gain>0) alert(`おかえり！留守中に ${Math.round(gain)} 枚焼けました（${secs}秒）`);
+  }
+
+  document.getElementById('cookieBtn').onclick = () => { S.cookies += S.cpc; S.clicks++; renderAll(); };
+  document.getElementById('buyClick').onclick = () => {
+    const cost = clickCost(); if (S.cookies >= cost){ S.cookies -= cost; S.cpc++; renderAll(); }
+  };
+  document.getElementById('saveBtn').onclick = ()=>{ save(true); alert('セーブしました'); };
+  document.getElementById('exportBtn').onclick = exportSave;
+  document.getElementById('importBtn').onclick = importSave;
+  document.getElementById('resetBtn').onclick = ()=>{ if(confirm('本当に初期化しますか？')){ localStorage.removeItem('cookie-save-v1'); location.reload(); } };
+
+  function tick(){ const cps = totalCPS(); S.cookies += cps/10; renderAll(); }
+  setInterval(tick, 100);
+  setInterval(()=>save(false), 10000);
+
+  load(); applyOffline(); renderAll();
+  setInterval(()=>{
+    const sec = Math.floor((Date.now()-S.startAt)/1000);
+    document.getElementById('playtime').textContent = `${Math.floor(sec/3600)}:${String(Math.floor((sec%3600)/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
+    document.getElementById('clicks').textContent = S.clicks;
+    document.getElementById('lastSave').textContent = S.lastSave? new Date(S.lastSave).toLocaleString():'-';
+    document.getElementById('lastQuit').textContent = S.lastQuit? new Date(S.lastQuit).toLocaleString():'-';
+  }, 1000);
+
+  window.addEventListener('beforeunload', ()=>{ S.lastQuit = Date.now(); save(false); });
+})();
+</script>
+</body>
+</html>

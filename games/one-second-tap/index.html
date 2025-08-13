@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>1秒タップ - 反射神経ゲーム</title>
+  <meta name="description" content="合図が出たら1秒ぴったりでタップ！反射神経とリズム感を競うミニゲーム。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%2300bcd4'/%3E%3Ctext x='50' y='58' font-size='48' text-anchor='middle' fill='white'%3E1%3C/text%3E%3C/svg%3E">
+  <style>
+    :root{ --bg:#0b1020; --fg:#e8f0ff; --accent:#00bcd4; --muted:#94a3b8; --good:#22c55e; --bad:#ef4444;}
+    *{box-sizing:border-box} html,body{height:100%}
+    body{ margin:0; font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto;
+      color:var(--fg); background: radial-gradient(1200px 800px at 20% -10%,#1b2450,transparent),
+                       radial-gradient(800px 600px at 120% 20%,#0a162b,transparent), var(--bg);
+      display:flex; align-items:center; justify-content:center; padding:16px;}
+    .card{ width:min(720px, 92vw); background:rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.08); border-radius:24px; backdrop-filter: blur(8px);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35); padding:28px;}
+    h1{margin:0 0 8px; font-size: clamp(22px, 3vw, 28px); letter-spacing:.02em}
+    .muted{color:var(--muted); font-size:14px}
+    .screen{ margin-top:20px; border-radius:18px; background:#0e172a; padding:24px; min-height:260px;
+      display:flex; align-items:center; justify-content:center; position:relative; border:1px solid rgba(255,255,255,0.06);}
+    .btn{ appearance:none; border:none; border-radius:999px; padding:14px 22px; background:var(--accent); color:#001019;
+      font-weight:700; cursor:pointer; font-size:16px; box-shadow: 0 8px 20px rgba(0,188,212,.35); transition: transform .05s ease;}
+    .btn:active{ transform: translateY(1px) scale(.99) }
+    .row{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
+    .center{display:flex; justify-content:center; align-items:center; gap:12px}
+    .big-num{font-size: clamp(44px, 8vw, 72px); font-weight:800; letter-spacing:.02em}
+    .hint{font-size:14px; color:var(--muted)}
+    .badge{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.12); color:var(--muted); font-size:12px}
+    .bar{height:10px; background:#0b1225; border-radius:999px; overflow:hidden; border:1px solid rgba(255,255,255,.08)}
+    .bar > i{display:block; height:100%; width:0%; background:linear-gradient(90deg,#22c55e,#00bcd4); transition:width .3s ease}
+    .ghost{opacity:.6} .grid{display:grid; grid-template-columns:1fr; gap:14px; margin-top:16px}
+    @media (min-width: 720px){ .grid{grid-template-columns:1fr 1fr} }
+    .result{font-size: clamp(26px, 6vw, 42px); font-weight:900} .good{color:var(--good)} .bad{color:var(--bad)}
+    .share{display:flex; gap:10px; margin-top:10px; flex-wrap:wrap} .pill{border:1px solid rgba(255,255,255,.18); padding:8px 12px; border-radius:999px; font-size:12px; color:var(--muted)}
+    .kbd{padding:2px 6px; border-radius:6px; border:1px solid rgba(255,255,255,.2)}
+  </style>
+</head>
+<body>
+  <div class="card" role="main">
+    <div class="row" style="justify-content:space-between">
+      <div>
+        <h1>1秒タップ ⏱️</h1>
+        <div class="muted">合図のあと<b>ちょうど1.000秒</b>で押せる？（スペースキー / クリック）</div>
+      </div>
+      <div class="badge"><span>ベスト：</span><b id="best">--</b> ms</div>
+    </div>
+
+    <div class="screen" id="screen" aria-live="polite">
+      <div class="center">
+        <button class="btn" id="start">スタート</button>
+        <span class="hint">合図が出たら押す → 1秒に近いほど高スコア</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="row" style="justify-content:space-between">
+          <div class="pill">平均 <b id="avg">--</b> ms</div>
+          <div class="pill">プレイ <b id="plays">0</b> 回</div>
+        </div>
+        <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+        <div class="hint">±10ms以内で<b>神業</b>、±50msで<b>上級</b>。ミスは赤表示。</div>
+      </div>
+      <div>
+        <div class="muted">ルール</div>
+        <ul class="muted">
+          <li>スタート後、ランダムなタイミングで<b>「今！」</b>が出る</li>
+          <li>そこから1.000秒後に押せた誤差がスコア（ms）</li>
+          <li>早押し・二度押しは失敗扱い</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="share">
+      <button class="btn ghost" id="tweet">結果をポスト</button>
+      <button class="btn ghost" id="copy">結果をコピー</button>
+      <span class="hint">ショートカット：<span class="kbd">Space</span> / <span class="kbd">Enter</span></span>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const screen = document.getElementById('screen');
+  const bestEl = document.getElementById('best');
+  const avgEl = document.getElementById('avg');
+  const playsEl = document.getElementById('plays');
+  const bar = document.getElementById('bar');
+  const tweetBtn = document.getElementById('tweet');
+  const copyBtn = document.getElementById('copy');
+
+  const store = {
+    load() {
+      try {
+        const s = JSON.parse(localStorage.getItem('one-sec-v1') || '{}');
+        this.best = s.best ?? null;
+        this.sum = s.sum ?? 0;
+        this.plays = s.plays ?? 0;
+      } catch(e){ this.best=null; this.sum=0; this.plays=0; }
+      renderStats();
+    },
+    save() {
+      localStorage.setItem('one-sec-v1', JSON.stringify({best:this.best, sum:this.sum, plays:this.plays}));
+    },
+    best:null, sum:0, plays:0
+  };
+
+  let state = "idle";
+  let tSignal = 0, pressAt = 0, timerId = null;
+  const rand = (a,b) => Math.random()*(b-a)+a;
+
+  function renderStats(){
+    bestEl.textContent = store.best==null? "--" : Math.abs(store.best).toFixed(0);
+    const avg = store.plays? (store.sum/store.plays) : null;
+    avgEl.textContent = avg==null? "--" : avg.toFixed(0);
+    playsEl.textContent = store.plays;
+  }
+
+  function resetScreen(){
+    screen.innerHTML = `<div class="center"><button class="btn" id="start">スタート</button><span class="hint">合図が出たら押す → 1秒に近いほど高スコア</span></div>`;
+    document.getElementById('start').addEventListener('click', start);
+    state = "idle";
+    bar.style.width = '0%';
+  }
+
+  function start(){
+    state = "waiting";
+    screen.innerHTML = `<div class="center"><div class="muted">…合図を待ってください</div></div>`;
+    const waitMs = rand(1000, 3500);
+    timerId = setTimeout(()=>{
+      tSignal = performance.now();
+      state = "timing";
+      screen.innerHTML = `<div class="center"><div class="big-num" id="timer">今！</div></div>`;
+    }, waitMs);
+  }
+
+  function fail(msg="早すぎ！"){
+    if (timerId) clearTimeout(timerId);
+    state = "done";
+    screen.innerHTML = `<div class="center"><div class="result bad">失敗：${msg}</div></div>`;
+  }
+
+  function finish(){
+    const dt = (pressAt - tSignal) - 1000;
+    const abs = Math.abs(dt);
+    store.plays++; store.sum += abs;
+    if (store.best==null || abs < Math.abs(store.best)) store.best = dt;
+    store.save(); renderStats();
+    const cls = abs<=50? "good" : "bad";
+    const msg = abs<=10? "神業！" : abs<=50? "上級！" : abs<=120? "まずまず" : "まだ伸びる！";
+    screen.innerHTML = `<div class="center"><div class="result ${cls}">${abs.toFixed(0)} ms</div><div class="muted">${msg}</div></div>`;
+    const percent = Math.max(0, Math.min(100, 100 - (abs/10)));
+    bar.style.width = percent + "%";
+  }
+
+  function onPress(){
+    if (state==="idle"){ start(); return; }
+    if (state==="waiting"){ fail("合図の前に押した"); return; }
+    if (state==="timing"){ pressAt = performance.now(); finish(); state = "done"; return; }
+    if (state==="done"){ resetScreen(); }
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.code==="Space" || e.code==="Enter"){ e.preventDefault(); onPress(); }
+  });
+  screen.addEventListener('click', onPress);
+
+  document.getElementById('tweet').addEventListener('click', () => {
+    const best = store.best==null? "--" : `${Math.abs(store.best).toFixed(0)}ms`;
+    const url = encodeURIComponent(location.href);
+    const text = encodeURIComponent(`1秒タップでベスト ${best}！#1秒タップ`);
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`,'_blank');
+  });
+  document.getElementById('copy').addEventListener('click', async () => {
+    const best = store.best==null? "--" : `${Math.abs(store.best).toFixed(0)}ms`;
+    const text = `1秒タップのベスト ${best}（${location.href}）`;
+    try { await navigator.clipboard.writeText(text); document.getElementById('copy').textContent = "コピーしました"; setTimeout(()=>document.getElementById('copy').textContent="結果をコピー", 1200); } catch(e){}
+  });
+
+  store.load();
+  document.getElementById('start').addEventListener('click', start);
+})();
+</script>
+</body>
+</html>

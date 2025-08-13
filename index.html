@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>暇つぶしゲームまとめ</title>
+  <meta name="description" content="ブラウザで遊べる暇つぶしミニゲームのまとめ。検索・タグで絞り込みできます。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect rx='18' width='100' height='100' fill='%231a2b4a'/%3E%3Ctext x='50' y='62' font-size='54' text-anchor='middle' fill='%23fff'%3E🎮%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./assets/css/styles.css">
+</head>
+<body>
+  <div class="wrap">
+    <h1>暇つぶしゲームまとめ</h1>
+    <div class="muted">手軽に遊べるブラウザゲームを集めました。検索・タグで絞れます。</div>
+
+    <div class="controls">
+      <input id="q" class="input" placeholder="キーワード検索（例：クリック 放置 反射）">
+      <select id="sort">
+        <option value="new">新着順</option>
+        <option value="name">名前順</option>
+        <option value="pop">人気順（ローカル）</option>
+      </select>
+    </div>
+
+    <div id="tagArea" class="chips"></div>
+    <div id="list" class="grid"></div>
+
+    <footer>© <span id="year"></span> あなたのサイト名 — GitHub Pages</footer>
+  </div>
+
+  <!-- データ → ロジック -->
+  <script src="./data/games.js"></script>
+  <script src="./assets/js/app.js"></script>
+</body>
+</html>
