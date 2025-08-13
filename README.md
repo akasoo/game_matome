@@ -1,25 +1,55 @@
-# 暇つぶしゲームまとめ（GitHub Pages用）
+# 暇つぶしゲーム集 (Hub Games Site)
 
-## 構成（静的サイトのデファクト）
+静的HTMLとJavaScriptだけで動く、暇つぶしゲーム集です。
+GitHub Pages で公開されていて、ブラウザだけで手軽に遊べます。
+
+---
+
+## 🎯 プロジェクト概要
+- 複数のミニゲームを1つのサイトにまとめて公開
+- 完全クライアントサイド（サーバ不要）
+- ゲームは個別ページとしても単体で遊べる設計
+
+---
+
+## 🚀 デモサイト
+[GitHub Pagesで公開する例](https://akasoo.github.io/hub_games_site/)
+
+---
+
+## 🕹️ 含まれているゲーム
+- **1秒タップ**: ちょうど1秒を目指してクリック
+- **クッキー工房**: クッキーを作ってポイントを稼ぐ放置ゲーム
+
+---
+
+## 📂 ディレクトリ構造
 ```
 /
-├─ index.html              # ハブ（トップ）
+├─ index.html              # トップページ
 ├─ assets/
-│  ├─ css/styles.css       # スタイル
-│  └─ js/app.js            # ロジック
+│  ├─ css/styles.css       # スタイルシート
+│  └─ js/app.js            # フロントエンドロジック
 ├─ data/
-│  └─ games.js             # ゲーム一覧データ（編集は主にここ）
+│  └─ games.js             # ゲーム一覧データ
 └─ games/
-   ├─ one-second-tap/      # 1秒タップ（単体で動作）
+   ├─ one-second-tap/      # 1秒タップ
    │  └─ index.html
-   └─ cookie/              # クッキー工房（単体で動作）
+   └─ cookie/              # クッキー工房
       └─ index.html
 ```
 
-## 公開（GitHub Pages）
-- リポジトリにアップ → Settings → Pages → Branch: `main` / Folder: `/ (root)` → Save
-- 例: https://<ユーザー名>.github.io/<リポ名>/
+---
 
-## 追加方法
-- `data/games.js` に `{title,url,desc,tags,cover,addedAt}` を追記
-- 新しいゲームは `games/<slug>/index.html` を置く
+## 💻 ローカルでの動作方法
+1. このリポジトリをクローンまたはZIPダウンロード
+2. `index.html` をブラウザで開く
+   ```bash
+   git clone https://github.com/akasoo/hub_games_site.git
+   cd hub_games_site
+   open index.html  # macOS
+   start index.html # Windows
+   ```
+
+---
+
