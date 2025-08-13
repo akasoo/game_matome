@@ -1,4 +1,4 @@
-# 暇つぶしゲーム集 (Hub Games Site)
+# 暇つぶしゲーム集 (game_matome)
 
 静的HTMLとJavaScriptだけで動く、暇つぶしゲーム集です。  
 GitHub Pages で公開されていて、ブラウザだけで手軽に遊べます。
@@ -11,7 +11,7 @@ GitHub Pages で公開されていて、ブラウザだけで手軽に遊べま�
 
 
 ## 🚀 デモサイト
-[GitHub Pages](https://akasoo.github.io/hub_games_site/)
+[GitHub Pages](https://akasoo.github.io/game_matome/)
 
 
 ## 🕹️ 含まれているゲーム
